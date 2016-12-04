@@ -1,0 +1,31 @@
+{
+  "name": "@buxlabs/es6-to-amd",
+  "version": "0.1.0",
+  "description": "es6 to amd converter",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava \"test/spec/**/*.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/buxlabs/es6-to-amd.git"
+  },
+  "keywords": [
+    "es6",
+    "amd",
+    "converter"
+  ],
+  "author": "Emil Ajdyna <emil@ajdyna.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/buxlabs/es6-to-amd/issues"
+  },
+  "homepage": "https://github.com/buxlabs/es6-to-amd#readme",
+  "devDependencies": {
+    "ava": "^0.17.0"
+  },
+  "dependencies": {
+    "acorn": "^4.0.3",
+    "escodegen": "^1.8.1"
+  }
+}
