@@ -23,7 +23,11 @@ function convert (name) {
     return isValid;
 }
 
-test('converter is defined', t => {
+test('it converts one import', t => {
     t.truthy(convert('one-import'));
+});
+
+test('it does not convert files without import', t => {
+    t.truthy(convert('no-import'));
 });
 

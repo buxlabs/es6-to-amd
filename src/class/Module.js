@@ -16,14 +16,22 @@ class Module {
         var pairs = this.getDependencyPairs();
         this.removeImports();
         this.convertExportDefaultToReturn();
-        this.addUseStrict();
-        this.wrapWithDefine();
+        if (pairs.length > 0) {
+            this.addUseStrict();
+            this.wrapWithDefine(pairs);
+        }
     }
 
     getDependencyPairs () {
-        return [
-            { 'backbone': 'Backbone' }
-        ];
+        return this.ast.body.map(function (node) {
+            if (node.type === 'ImportDeclaration') {
+                return {
+                    element: 'backbone',
+                    param: 'Backbone'
+                };
+            }
+            return null;
+        }).filter(node => !!node);
     }
 
     removeImports () {
@@ -51,7 +59,7 @@ class Module {
         });
     }
 
-    wrapWithDefine () {
+    wrapWithDefine (pairs) {
         var body = this.ast.body;
         this.ast.body = [{
             type: 'CallExpression',
@@ -59,15 +67,11 @@ class Module {
             arguments: [
                 {
                     type: 'ArrayExpression',
-                    elements: [
-                        { type: 'Literal', value: 'backbone' }
-                    ]
+                    elements: pairs.map(function (pair) { return { type: 'Literal', value: pair.element }; })
                 },
                 {
                     type: 'FunctionExpression',
-                    params: [
-                        { type: 'Identifier', name: 'Backbone' }
-                    ],
+                    params: pairs.map(function(pair) {return { type: 'Identifier', name: pair.param }; }),
                     body: {
                         type: 'BlockStatement',
                         body: body
