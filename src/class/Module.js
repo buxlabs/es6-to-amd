@@ -26,8 +26,8 @@ class Module {
         return this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
                 return {
-                    element: 'backbone',
-                    param: 'Backbone'
+                    element: node.source.value,
+                    param: node.specifiers[0].local.name
                 };
             }
             return null;
