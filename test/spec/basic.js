@@ -31,3 +31,7 @@ test('it does not convert files without import', t => {
     t.truthy(convert('no-import'));
 });
 
+test('it does not convert files without import for function expression', t => {
+    t.truthy(convert('no-import-function-expression'));
+});
+
