@@ -16,7 +16,7 @@ converter.stream = function () {
         if (typeof file === 'string') { return callback(null, converter(file)); }
         var data = file.contents.toString('utf8');
         file.contents = new Buffer(converter(data));
-        callback(null, converter(data));
+        callback(null, file);
     };
 
     return transform;
