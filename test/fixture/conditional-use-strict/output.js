@@ -1,4 +1,4 @@
-(define(['core/view'], function (View) {
+define(['core/view'], function (View) {
     'use strict'
     return View.extend({
         template: function (data) {
@@ -9,5 +9,5 @@
             return __p;
         }
     });
-}))
+});
 

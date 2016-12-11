@@ -38,3 +38,8 @@ test('it does not convert files without import for function expression', t => {
 test('it does add use strict if the result code has no with statement', t => {
     t.truthy(convert('conditional-use-strict'));
 });
+
+test('it does convert simple object expressions', t => {
+    t.truthy(convert('object-expression'));
+});
+

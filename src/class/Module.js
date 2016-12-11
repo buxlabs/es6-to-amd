@@ -14,11 +14,13 @@ class Module {
 
     convert () {
         var pairs = this.getDependencyPairs();
-        this.removeImports();
-        this.convertExportDefaultToReturn();
         if (pairs.length > 0) {
+            this.removeImports();
+            this.convertExportDefaultToReturn();
             this.addUseStrict();
-            this.wrapWithDefine(pairs);
+            this.wrapWithDefineWithPairs(pairs);
+        } else if (this.hasExportDefault()) {
+            this.convertExportDefaultToDefine();
         }
     }
 
@@ -32,6 +34,10 @@ class Module {
             }
             return null;
         }).filter(node => !!node);
+    }
+
+    hasExportDefault () {
+        return this.ast.body.filter(node => node.type === 'ExportDefaultDeclaration').length > 0
     }
 
     removeImports () {
@@ -52,6 +58,24 @@ class Module {
         });
     }
 
+    convertExportDefaultToDefine () {
+        this.ast.body = this.ast.body.map(function (node) {
+            if (node.type === 'ExportDefaultDeclaration') {
+                return {
+                    type: 'ExpressionStatement',
+                    expression: {
+                        type: 'CallExpression',
+                        callee: { type: 'Identifier', name: 'define' },
+                        arguments: [
+                            node.declaration
+                        ]
+                    }
+                };
+            }
+            return node;
+        });
+    }
+
     addUseStrict () {
         this.ast.body.unshift({
             type: 'Literal',
@@ -59,25 +83,28 @@ class Module {
         });
     }
 
-    wrapWithDefine (pairs) {
+    wrapWithDefineWithPairs (pairs) {
         var body = this.ast.body;
         this.ast.body = [{
-            type: 'CallExpression',
-            callee: { type: 'Identifier', name: 'define' },
-            arguments: [
-                {
-                    type: 'ArrayExpression',
-                    elements: pairs.map(function (pair) { return { type: 'Literal', value: pair.element }; })
-                },
-                {
-                    type: 'FunctionExpression',
-                    params: pairs.map(function(pair) {return { type: 'Identifier', name: pair.param }; }),
-                    body: {
-                        type: 'BlockStatement',
-                        body: body
+            type: 'ExpressionStatement',
+            expression: {
+                type: 'CallExpression',
+                callee: { type: 'Identifier', name: 'define' },
+                arguments: [
+                    {
+                        type: 'ArrayExpression',
+                        elements: pairs.map(function (pair) { return { type: 'Literal', value: pair.element }; })
+                    },
+                    {
+                        type: 'FunctionExpression',
+                        params: pairs.map(function(pair) {return { type: 'Identifier', name: pair.param }; }),
+                        body: {
+                            type: 'BlockStatement',
+                            body: body
+                        }
                     }
-                }
-            ]
+                ]
+            }
         }];
     }
 
