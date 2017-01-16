@@ -2,6 +2,7 @@
 
 const acorn = require('acorn');
 const escodegen = require('escodegen');
+const _ = require('underscore');
 const AbstractSyntaxTree = require('@buxlabs/ast');
 
 class Module extends AbstractSyntaxTree {
@@ -10,11 +11,11 @@ class Module extends AbstractSyntaxTree {
         var pairs = this.getDependencyPairs();
         if (pairs.length > 0) {
             this.remove({ type: 'ImportDeclaration' });
-            this.convertExportDefaultToReturn();
             this.prepend({
                 type: 'Literal',
                 value: 'use strict'
             });
+            this.convertExportDefaultToReturn();
             this.normalizeIdentifiers(pairs);
             this.wrapWithDefineWithPairs(pairs);
         } else if (this.has('ExportDefaultDeclaration')) {
@@ -23,24 +24,24 @@ class Module extends AbstractSyntaxTree {
     }
 
     getDependencyPairs () {
-        return this.ast.body.map(function (node) {
+        return _.flatten(this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
-                var specifier = node.specifiers[0];
-                if (specifier.type === 'ImportSpecifier') {
+                return node.specifiers.map(function (specifier) {
+                    if (specifier.type === 'ImportSpecifier') {
+                        return {
+                            element: node.source.value,
+                            param: 'a',
+                            name: specifier.local.name
+                        };
+                    }
                     return {
                         element: node.source.value,
-                        param: 'a',
-                        name: specifier.local.name
+                        param: specifier.local.name
                     };
-                }
-                return {
-                    element: node.source.value,
-                    param: specifier.local.name
-                };
-
+                });
             }
             return null;
-        }).filter(node => !!node);
+        }).filter(node => !!node));
     }
 
     convertExportDefaultToReturn () {
@@ -74,16 +75,42 @@ class Module extends AbstractSyntaxTree {
     }
 
     normalizeIdentifiers (pairs) {
-        pairs
-        .filter(pair => !!pair.name)
-        .forEach(pair => {
-            let identifiers = this.find(`Identifier[name=${pair.name}]`);
-            
+        let nodes = pairs.filter(pair => !!pair.name);
+        let names = nodes.map(node => node.name);
+        this.replace({
+            leave: function (current, parent) {
+                if (current.type === 'Identifier') {
+                    let index = names.indexOf(current.name);
+                    if (index !== -1) {
+                        let pair = nodes[index];
+                        return {
+                            type: 'MemberExpression',
+                            object: {
+                                type: 'Identifier',
+                                name: pair.param
+                            },
+                            property: {
+                                type: 'Identifier',
+                                name: pair.name
+                            }
+                        };
+                    }
+                }
+                return current;
+            }
         });
     }
 
     wrapWithDefineWithPairs (pairs) {
         var body = this.ast.body;
+        var elements = _.unique(pairs.map(pair => pair.element))
+        .map(function (element) {
+            return { type: 'Literal', value: element };
+        });
+        var params = _.unique(pairs.map(pair => pair.param))
+        .map(function(param) {
+            return { type: 'Identifier', name: param };
+        });
         this.ast.body = [{
             type: 'ExpressionStatement',
             expression: {
@@ -92,11 +119,11 @@ class Module extends AbstractSyntaxTree {
                 arguments: [
                     {
                         type: 'ArrayExpression',
-                        elements: pairs.map(function (pair) { return { type: 'Literal', value: pair.element }; })
+                        elements: elements
                     },
                     {
                         type: 'FunctionExpression',
-                        params: pairs.map(function(pair) {return { type: 'Identifier', name: pair.param }; }),
+                        params: params,
                         body: {
                             type: 'BlockStatement',
                             body: body
@@ -105,10 +132,6 @@ class Module extends AbstractSyntaxTree {
                 ]
             }
         }];
-    }
-
-    toSource () {
-        return escodegen.generate(this.ast);
     }
 
 }
