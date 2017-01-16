@@ -2,24 +2,22 @@
 
 const acorn = require('acorn');
 const escodegen = require('escodegen');
+const AbstractSyntaxTree = require('@buxlabs/ast');
 
-class Module {
-    
-    constructor (source) {
-        this.source = source;
-        this.ast = acorn.parse(source, {
-            sourceType: 'module'
-        });
-    }
+class Module extends AbstractSyntaxTree {
 
     convert () {
         var pairs = this.getDependencyPairs();
         if (pairs.length > 0) {
-            this.removeImports();
+            this.remove({ type: 'ImportDeclaration' });
             this.convertExportDefaultToReturn();
-            this.addUseStrict();
+            this.prepend({
+                type: 'Literal',
+                value: 'use strict'
+            });
+            this.normalizeIdentifiers(pairs);
             this.wrapWithDefineWithPairs(pairs);
-        } else if (this.hasExportDefault()) {
+        } else if (this.has('ExportDefaultDeclaration')) {
             this.convertExportDefaultToDefine();
         }
     }
@@ -27,23 +25,22 @@ class Module {
     getDependencyPairs () {
         return this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
+                var specifier = node.specifiers[0];
+                if (specifier.type === 'ImportSpecifier') {
+                    return {
+                        element: node.source.value,
+                        param: 'a',
+                        name: specifier.local.name
+                    };
+                }
                 return {
                     element: node.source.value,
-                    param: node.specifiers[0].local.name
+                    param: specifier.local.name
                 };
+
             }
             return null;
         }).filter(node => !!node);
-    }
-
-    hasExportDefault () {
-        return this.ast.body.filter(node => node.type === 'ExportDefaultDeclaration').length > 0
-    }
-
-    removeImports () {
-        this.ast.body = this.ast.body.filter(function (node) {
-            return node.type !== 'ImportDeclaration';
-        });
     }
 
     convertExportDefaultToReturn () {
@@ -76,10 +73,12 @@ class Module {
         });
     }
 
-    addUseStrict () {
-        this.ast.body.unshift({
-            type: 'Literal',
-            value: 'use strict'
+    normalizeIdentifiers (pairs) {
+        pairs
+        .filter(pair => !!pair.name)
+        .forEach(pair => {
+            let identifiers = this.find(`Identifier[name=${pair.name}]`);
+            
         });
     }
 
