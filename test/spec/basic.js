@@ -43,3 +43,12 @@ test('it does convert simple object expressions', t => {
     t.truthy(convert('object-expression'));
 });
 
+test('it does convert object descructuring', t => {
+    t.truthy(convert('one-destructuring-import'));
+});
+
+test('it does convert object descructuring for multiple specifiers', t => {
+    t.truthy(convert('two-destructuring-imports'));
+});
+
+

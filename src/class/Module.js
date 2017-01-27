@@ -2,48 +2,46 @@
 
 const acorn = require('acorn');
 const escodegen = require('escodegen');
+const _ = require('underscore');
+const AbstractSyntaxTree = require('@buxlabs/ast');
 
-class Module {
-    
-    constructor (source) {
-        this.source = source;
-        this.ast = acorn.parse(source, {
-            sourceType: 'module'
-        });
-    }
+class Module extends AbstractSyntaxTree {
 
     convert () {
         var pairs = this.getDependencyPairs();
         if (pairs.length > 0) {
-            this.removeImports();
+            this.remove({ type: 'ImportDeclaration' });
+            this.prepend({
+                type: 'Literal',
+                value: 'use strict'
+            });
             this.convertExportDefaultToReturn();
-            this.addUseStrict();
+            this.normalizeIdentifiers(pairs);
             this.wrapWithDefineWithPairs(pairs);
-        } else if (this.hasExportDefault()) {
+        } else if (this.has('ExportDefaultDeclaration')) {
             this.convertExportDefaultToDefine();
         }
     }
 
     getDependencyPairs () {
-        return this.ast.body.map(function (node) {
+        return _.flatten(this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
-                return {
-                    element: node.source.value,
-                    param: node.specifiers[0].local.name
-                };
+                return node.specifiers.map(function (specifier) {
+                    if (specifier.type === 'ImportSpecifier') {
+                        return {
+                            element: node.source.value,
+                            param: 'a',
+                            name: specifier.local.name
+                        };
+                    }
+                    return {
+                        element: node.source.value,
+                        param: specifier.local.name
+                    };
+                });
             }
             return null;
-        }).filter(node => !!node);
-    }
-
-    hasExportDefault () {
-        return this.ast.body.filter(node => node.type === 'ExportDefaultDeclaration').length > 0
-    }
-
-    removeImports () {
-        this.ast.body = this.ast.body.filter(function (node) {
-            return node.type !== 'ImportDeclaration';
-        });
+        }).filter(node => !!node));
     }
 
     convertExportDefaultToReturn () {
@@ -76,15 +74,43 @@ class Module {
         });
     }
 
-    addUseStrict () {
-        this.ast.body.unshift({
-            type: 'Literal',
-            value: 'use strict'
+    normalizeIdentifiers (pairs) {
+        let nodes = pairs.filter(pair => !!pair.name);
+        let names = nodes.map(node => node.name);
+        this.replace({
+            leave: function (current, parent) {
+                if (current.type === 'Identifier') {
+                    let index = names.indexOf(current.name);
+                    if (index !== -1) {
+                        let pair = nodes[index];
+                        return {
+                            type: 'MemberExpression',
+                            object: {
+                                type: 'Identifier',
+                                name: pair.param
+                            },
+                            property: {
+                                type: 'Identifier',
+                                name: pair.name
+                            }
+                        };
+                    }
+                }
+                return current;
+            }
         });
     }
 
     wrapWithDefineWithPairs (pairs) {
         var body = this.ast.body;
+        var elements = _.unique(pairs.map(pair => pair.element))
+        .map(function (element) {
+            return { type: 'Literal', value: element };
+        });
+        var params = _.unique(pairs.map(pair => pair.param))
+        .map(function(param) {
+            return { type: 'Identifier', name: param };
+        });
         this.ast.body = [{
             type: 'ExpressionStatement',
             expression: {
@@ -93,11 +119,11 @@ class Module {
                 arguments: [
                     {
                         type: 'ArrayExpression',
-                        elements: pairs.map(function (pair) { return { type: 'Literal', value: pair.element }; })
+                        elements: elements
                     },
                     {
                         type: 'FunctionExpression',
-                        params: pairs.map(function(pair) {return { type: 'Identifier', name: pair.param }; }),
+                        params: params,
                         body: {
                             type: 'BlockStatement',
                             body: body
@@ -106,10 +132,6 @@ class Module {
                 ]
             }
         }];
-    }
-
-    toSource () {
-        return escodegen.generate(this.ast);
     }
 
 }
