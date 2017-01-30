@@ -1,5 +1,5 @@
 define(['core/view'], function (View) {
-    'use strict'
+    'use strict';
     return View.extend({
         template: function (data) {
             var __t, __p = '', __j = Array.prototype.join, print = function () {

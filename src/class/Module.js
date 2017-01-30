@@ -1,7 +1,5 @@
 'use strict';
 
-const acorn = require('acorn');
-const escodegen = require('escodegen');
 const _ = require('underscore');
 const AbstractSyntaxTree = require('@buxlabs/ast');
 
@@ -12,8 +10,11 @@ class Module extends AbstractSyntaxTree {
         if (pairs.length > 0) {
             this.remove({ type: 'ImportDeclaration' });
             this.prepend({
-                type: 'Literal',
-                value: 'use strict'
+                type: 'ExpressionStatement', 
+                expression: {
+                    type: 'Literal',
+                    value: 'use strict'
+                }
             });
             this.convertExportDefaultToReturn();
             this.normalizeIdentifiers(pairs);
@@ -26,10 +27,18 @@ class Module extends AbstractSyntaxTree {
     getDependencyPairs () {
         return _.flatten(this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
+                if (node.source &&
+                    node.source.type === 'Literal' &&
+                    node.specifiers.length === 0) {
+                    return {
+                        element: node.source.value
+                    };
+                }
                 return node.specifiers.map(function (specifier) {
                     if (specifier.type === 'ImportSpecifier') {
                         return {
                             element: node.source.value,
+                            // TODO assign any free identifier
                             param: 'a',
                             name: specifier.local.name
                         };
@@ -107,7 +116,7 @@ class Module extends AbstractSyntaxTree {
         .map(function (element) {
             return { type: 'Literal', value: element };
         });
-        var params = _.unique(pairs.map(pair => pair.param))
+        var params = _.unique(pairs.filter(pair => pair.param).map(pair => pair.param))
         .map(function(param) {
             return { type: 'Identifier', name: param };
         });

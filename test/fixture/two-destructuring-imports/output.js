@@ -1,5 +1,5 @@
 define(['backbone'], function (a) {
-    'use strict'
+    'use strict';
     var MyModel = a.Model.extend({});
     return a.Collection.extend({
         model: MyModel
