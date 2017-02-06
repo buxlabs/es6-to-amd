@@ -4,7 +4,8 @@
   "description": "es6 to amd converter",
   "main": "index.js",
   "scripts": {
-    "test": "ava \"test/spec/**/*.js\""
+    "test": "ava \"test/spec/**/*.js\"",
+    "coverage": "nyc npm t"
   },
   "repository": {
     "type": "git",
@@ -22,7 +23,8 @@
   },
   "homepage": "https://github.com/buxlabs/es6-to-amd#readme",
   "devDependencies": {
-    "ava": "^0.18.1"
+    "ava": "^0.18.1",
+    "nyc": "^10.1.2"
   },
   "dependencies": {
     "@buxlabs/ast": "^0.1.11",
