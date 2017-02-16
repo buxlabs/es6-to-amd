@@ -52,5 +52,9 @@ test('it does convert object descructuring for multiple specifiers', t => {
 });
 
 test('it does work for side effects', t => {
-    t.truthy(convert('side-effect'));    
+    t.truthy(convert('side-effect'));
+});
+
+test('it works for duplicated properties', t => {
+    t.truthy(convert('duplicated-import'));
 });

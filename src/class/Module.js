@@ -10,7 +10,7 @@ class Module extends AbstractSyntaxTree {
         if (pairs.length > 0) {
             this.remove({ type: 'ImportDeclaration' });
             this.prepend({
-                type: 'ExpressionStatement', 
+                type: 'ExpressionStatement',
                 expression: {
                     type: 'Literal',
                     value: 'use strict'
@@ -18,7 +18,7 @@ class Module extends AbstractSyntaxTree {
             });
             this.convertExportDefaultToReturn();
             this.normalizeIdentifiers(pairs);
-            this.wrapWithDefineWithPairs(pairs);
+            this.wrapWithDefineWithPairs(_.unique(pairs, item => item.element + item.param));
         } else if (this.has('ExportDefaultDeclaration')) {
             this.convertExportDefaultToDefine();
         }
@@ -112,11 +112,11 @@ class Module extends AbstractSyntaxTree {
 
     wrapWithDefineWithPairs (pairs) {
         var body = this.ast.body;
-        var elements = _.unique(pairs.map(pair => pair.element))
+        var elements = pairs.map(pair => pair.element)
         .map(function (element) {
             return { type: 'Literal', value: element };
         });
-        var params = _.unique(pairs.filter(pair => pair.param).map(pair => pair.param))
+        var params = pairs.filter(pair => pair.param).map(pair => pair.param)
         .map(function(param) {
             return { type: 'Identifier', name: param };
         });
@@ -146,4 +146,3 @@ class Module extends AbstractSyntaxTree {
 }
 
 module.exports = Module;
-
