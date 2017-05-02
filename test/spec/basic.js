@@ -51,6 +51,10 @@ test('it does convert object descructuring for multiple specifiers', t => {
     t.truthy(convert('two-destructuring-imports'));
 });
 
+test('it does generate free identifiers', t => {
+    t.truthy(convert('two-different-destructuring-imports'));
+});
+
 test('it does work for side effects', t => {
     t.truthy(convert('side-effect'));
 });

@@ -23,8 +23,27 @@ class Module extends AbstractSyntaxTree {
             this.convertExportDefaultToDefine();
         }
     }
+    
+    getIdentifiers () {
+        return _.unique(this.find('Identifier').map(item => item.name));
+    }
+    
+    generateFreeIdentifier (takenIdentifiers) {
+        var identifiers = _.unique(_.flatten(this.getIdentifiers())).concat(takenIdentifiers);
+        var alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        var index = 0;
+        while (identifiers.indexOf(alphabet[index]) !== -1) {
+            index += 1;
+            if (index === alphabet.length) {
+                index = 0;
+                alphabet = alphabet.map(character => '_' + character);
+            }
+        }
+        return alphabet[index];
+    }
 
     getDependencyPairs () {
+        var dependencyToIdentifierMap = {};
         return _.flatten(this.ast.body.map(function (node) {
             if (node.type === 'ImportDeclaration') {
                 if (node.source &&
@@ -35,11 +54,19 @@ class Module extends AbstractSyntaxTree {
                     };
                 }
                 return node.specifiers.map(function (specifier) {
+                    
                     if (specifier.type === 'ImportSpecifier') {
+                        var identifier;
+                        var value = node.source.value;
+                        if (dependencyToIdentifierMap.hasOwnProperty(value)) {
+                            identifier = dependencyToIdentifierMap[value];
+                        } else {
+                            identifier = this.generateFreeIdentifier(Object.values(dependencyToIdentifierMap));
+                            dependencyToIdentifierMap[value] = identifier;
+                        }
                         return {
                             element: node.source.value,
-                            // TODO assign any free identifier
-                            param: 'a',
+                            param: identifier,
                             name: specifier.local.name
                         };
                     }
@@ -47,10 +74,10 @@ class Module extends AbstractSyntaxTree {
                         element: node.source.value,
                         param: specifier.local.name
                     };
-                });
+                }.bind(this));
             }
             return null;
-        }).filter(node => !!node));
+        }.bind(this)).filter(node => !!node));
     }
 
     convertExportDefaultToReturn () {
