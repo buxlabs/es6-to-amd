@@ -6,6 +6,8 @@
 
 ## Usage
 
+### node
+
 Convert a single file with:
 
 ```javascript
