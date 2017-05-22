@@ -20,7 +20,9 @@ class Module extends AbstractSyntaxTree {
             this.normalizeIdentifiers(pairs);
             this.wrapWithDefineWithPairs(_.unique(pairs, item => item.element + item.param));
         } else if (this.has('ExportDefaultDeclaration')) {
-            this.convertExportDefaultToDefine();
+            this.convertExportDefaultDeclarationToDefine();
+        } else if (this.has('ExportNamedDeclaration')) {
+            this.convertExportNamedDeclarationToDefine();
         }
     }
     
@@ -92,22 +94,58 @@ class Module extends AbstractSyntaxTree {
         });
     }
 
-    convertExportDefaultToDefine () {
-        this.ast.body = this.ast.body.map(function (node) {
+    convertExportDefaultDeclarationToDefine () {
+        this.ast.body = this.ast.body.map(node => {
             if (node.type === 'ExportDefaultDeclaration') {
-                return {
-                    type: 'ExpressionStatement',
-                    expression: {
-                        type: 'CallExpression',
-                        callee: { type: 'Identifier', name: 'define' },
-                        arguments: [
-                            node.declaration
-                        ]
-                    }
-                };
+                return this.getDefine([ node.declaration ]);
             }
             return node;
         });
+    }
+    
+    getDefine (nodes) {
+        return {
+            type: 'ExpressionStatement',
+            expression: {
+                type: 'CallExpression',
+                callee: { type: 'Identifier', name: 'define' },
+                arguments: nodes
+            }
+        };
+    }
+    
+    convertExportNamedDeclarationToDefine () {
+        var imports = this.ast.body.filter(node => {
+            return node.type === 'ExportNamedDeclaration';
+        });
+        var declarations = imports.reduce((previous, current) => {
+            if (current.declaration.type === 'FunctionDeclaration') {
+                return previous.concat(current.declaration);
+            }
+            return previous.concat(current.declaration.declarations);
+        }, []);
+        // TODO return FunctionExpresion if the body contains something else than ExportNamedDeclaration
+        this.ast.body = [
+            this.getDefine([
+                {
+                    "type": "ObjectExpression",
+                    "properties": declarations.map(declaration => {
+                        if (declaration.type === 'FunctionDeclaration') {
+                            return {
+                                type: "Property",
+                                key: declaration.id,
+                                value: declaration
+                            };
+                        }
+                        return {
+                            type: "Property",
+                            key: declaration.id,
+                            value: declaration.init
+                        };
+                    })
+                }    
+            ])
+        ];
     }
 
     normalizeIdentifiers (pairs) {

@@ -62,3 +62,11 @@ test('it does work for side effects', t => {
 test('it works for duplicated properties', t => {
     t.truthy(convert('duplicated-import'));
 });
+
+test('it works for multiple named exports', t => {
+    t.truthy(convert('multiple-exports')); 
+});
+
+test.skip('it works for named exports with other code', t => {
+    t.truthy(convert('multiple-exports-fns')); 
+});
