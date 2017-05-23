@@ -1,8 +1,5 @@
-define(function () {
+define(['hash'], function (hash) {
     'use strict';
-    function hash(str) {
-        return '1' + str + '1';
-    }
     
     return {
         guid: function guid() {

@@ -9,14 +9,12 @@ class Module extends AbstractSyntaxTree {
         var pairs = this.getDependencyPairs();
         if (pairs.length > 0) {
             this.remove({ type: 'ImportDeclaration' });
-            this.prepend({
-                type: 'ExpressionStatement',
-                expression: {
-                    type: 'Literal',
-                    value: 'use strict'
-                }
-            });
-            this.convertExportDefaultToReturn();
+            this.prependUseStrict();
+            if (this.has('ExportDefaultDeclaration')) {
+                this.convertExportDefaultToReturn();
+            } else if (this.has('ExportNamedDeclaration')) {
+                this.convertExportNamedToReturn();
+            }
             this.normalizeIdentifiers(pairs);
             this.wrapWithDefineWithPairs(_.unique(pairs, item => item.element + item.param));
         } else if (this.has('ExportDefaultDeclaration')) {
@@ -24,6 +22,16 @@ class Module extends AbstractSyntaxTree {
         } else if (this.has('ExportNamedDeclaration')) {
             this.convertExportNamedDeclarationToDefine();
         }
+    }
+    
+    prependUseStrict () {
+        this.prepend({
+            type: 'ExpressionStatement',
+            expression: {
+                type: 'Literal',
+                value: 'use strict'
+            }
+        });
     }
     
     getIdentifiers () {
@@ -93,6 +101,15 @@ class Module extends AbstractSyntaxTree {
             return node;
         });
     }
+    
+    convertExportNamedToReturn () {
+        var declarations = this.getExportNamedDeclarations();
+        this.remove({ type: 'ExportNamedDeclaration' });
+        this.append({
+            type: 'ReturnStatement',
+            argument: this.getObjectExpression(declarations)
+        });
+    }
 
     convertExportDefaultDeclarationToDefine () {
         this.ast.body = this.ast.body.map(node => {
@@ -127,27 +144,33 @@ class Module extends AbstractSyntaxTree {
     }
     
     convertExportNamedDeclarationToDefine () {
+        this.ast.body = [
+            this.getDefine([
+                this.getExportNamedDeclarationsBody()
+            ])
+        ];
+    }
+    
+    getExportNamedDeclarationsBody () {
         var declarations = this.getExportNamedDeclarations();
         this.ast.body = this.ast.body.filter(node => {
             return node.type !== 'ExportNamedDeclaration';
         });
-        if (this.ast.body.length > 0) {
-            return this.ast.body = [
-                this.getDefine([
-                    this.getFunctionExpression([], this.ast.body.concat([
-                        {
-                            type: 'ReturnStatement',
-                            argument: this.getObjectExpression(declarations)
-                        }
-                    ]))
-                ])
-            ];
+        var hasOtherCode = this.ast.body.length > 0;
+        return this.convertExportNamedDeclarationToBody(hasOtherCode, declarations);
+    }
+    
+    convertExportNamedDeclarationToBody (hasOtherCode, declarations) {
+        if (hasOtherCode) {
+            this.prependUseStrict();
+            return this.getFunctionExpression([], this.ast.body.concat([
+                {
+                    type: 'ReturnStatement',
+                    argument: this.getObjectExpression(declarations)
+                }
+            ]));
         }
-        this.ast.body = [
-            this.getDefine([
-                this.getObjectExpression(declarations)
-            ])
-        ];
+        return this.getObjectExpression(declarations);
     }
     
     getFunctionExpression (params, body) {

@@ -70,3 +70,7 @@ test('it works for multiple named exports', t => {
 test('it works for named exports with other code', t => {
     t.truthy(convert('multiple-exports-fns')); 
 });
+
+test('it works for file with named exports and imports', t => {
+    t.truthy(convert('multiple-exports-and-import')); 
+});
