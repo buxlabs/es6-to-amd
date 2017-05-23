@@ -114,38 +114,71 @@ class Module extends AbstractSyntaxTree {
         };
     }
     
-    convertExportNamedDeclarationToDefine () {
+    getExportNamedDeclarations () {
         var imports = this.ast.body.filter(node => {
             return node.type === 'ExportNamedDeclaration';
         });
-        var declarations = imports.reduce((previous, current) => {
+        return imports.reduce((previous, current) => {
             if (current.declaration.type === 'FunctionDeclaration') {
                 return previous.concat(current.declaration);
             }
             return previous.concat(current.declaration.declarations);
         }, []);
-        // TODO return FunctionExpresion if the body contains something else than ExportNamedDeclaration
+    }
+    
+    convertExportNamedDeclarationToDefine () {
+        var declarations = this.getExportNamedDeclarations();
+        this.ast.body = this.ast.body.filter(node => {
+            return node.type !== 'ExportNamedDeclaration';
+        });
+        if (this.ast.body.length > 0) {
+            return this.ast.body = [
+                this.getDefine([
+                    this.getFunctionExpression([], this.ast.body.concat([
+                        {
+                            type: 'ReturnStatement',
+                            argument: this.getObjectExpression(declarations)
+                        }
+                    ]))
+                ])
+            ];
+        }
         this.ast.body = [
             this.getDefine([
-                {
-                    "type": "ObjectExpression",
-                    "properties": declarations.map(declaration => {
-                        if (declaration.type === 'FunctionDeclaration') {
-                            return {
-                                type: "Property",
-                                key: declaration.id,
-                                value: declaration
-                            };
-                        }
-                        return {
-                            type: "Property",
-                            key: declaration.id,
-                            value: declaration.init
-                        };
-                    })
-                }    
+                this.getObjectExpression(declarations)
             ])
         ];
+    }
+    
+    getFunctionExpression (params, body) {
+        return {
+            type: 'FunctionExpression',
+            params: params,
+            body: {
+                type: 'BlockStatement',
+                body: body
+            }
+        };
+    }
+    
+    getObjectExpression (declarations) {
+        return {
+            "type": "ObjectExpression",
+            "properties": declarations.map(declaration => {
+                if (declaration.type === 'FunctionDeclaration') {
+                    return {
+                        type: "Property",
+                        key: declaration.id,
+                        value: declaration
+                    };
+                }
+                return {
+                    type: "Property",
+                    key: declaration.id,
+                    value: declaration.init
+                };
+            })
+        };
     }
 
     normalizeIdentifiers (pairs) {

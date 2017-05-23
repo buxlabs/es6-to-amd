@@ -1,7 +1,7 @@
 define(function () {
 
     function hash(str) {
-        return "1" + str + "1";
+        return '1' + str + '1';
     }
     
     return {
