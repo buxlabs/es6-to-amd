@@ -118,12 +118,25 @@ class Module extends AbstractSyntaxTree {
     }
 
     convertExportDefaultDeclarationToDefine () {
-        this.ast.body = this.ast.body.map(node => {
-            if (node.type === 'ExportDefaultDeclaration') {
-                return this.getDefine([ node.declaration ]);
+        this.prependUseStrict();
+        this.replace({
+            enter: function (node) {
+                if (node.type === 'ExportDefaultDeclaration') {
+                    node.type = 'ReturnStatement';
+                    node.argument = node.declaration;
+                    return node;
+                }
             }
-            return node;
         });
+        var body = this.ast.body;
+        this.ast.body = [this.getDefine([{
+            type: 'FunctionExpression',
+            params: [],
+            body: {
+                type: 'BlockStatement',
+                body: body
+            }
+        }])];
     }
     
     getDefine (nodes) {

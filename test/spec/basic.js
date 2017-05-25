@@ -47,6 +47,10 @@ test('it does convert simple object expressions', t => {
     t.truthy(convert('object-expression'));
 });
 
+test('it works for object expression with other code', t => {
+    t.truthy(convert('object-expression-with-code'));
+});
+
 test('it does convert object descructuring', t => {
     t.truthy(convert('one-destructuring-import'));
 });
@@ -68,6 +72,10 @@ test('it works for duplicated properties', t => {
 });
 
 test('it works for multiple named exports', t => {
+    t.truthy(convert('multiple-named-exports'));
+});
+
+test('it works for multiple exports', t => {
     t.truthy(convert('multiple-exports')); 
 });
 
@@ -77,8 +85,4 @@ test('it works for named exports with other code', t => {
 
 test('it works for file with named exports and imports', t => {
     t.truthy(convert('multiple-exports-and-import')); 
-});
-
-test('it works for multiple named exports', t => {
-    t.truthy(convert('multiple-named-exports'));
 });

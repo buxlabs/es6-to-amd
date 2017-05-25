@@ -1,3 +1,7 @@
+## 0.4.4
+
+- add: support ExportDefaultDeclaration with other code
+
 ## 0.4.3
 
 - add: support mixed ExportNamedDeclaration
