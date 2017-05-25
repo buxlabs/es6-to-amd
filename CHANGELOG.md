@@ -1,3 +1,8 @@
+## 0.4.6
+
+- add: ImportNamespaceSpecifier support
+- add: renamed ImportSpecifier support
+
 ## 0.4.5
 
 - refactor: first pass of code simplification

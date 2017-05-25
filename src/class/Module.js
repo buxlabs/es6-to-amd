@@ -57,10 +57,6 @@ class Module extends AbstractSyntaxTree {
         return node.source && node.source.type === 'Literal' && node.specifiers.length === 0;
     }
 
-    isImportDefaultSpecifier(specifier) {
-        return specifier.type === 'ImportDefaultSpecifier';
-    }
-
     getDependencyPairs () {
         var dependencyToIdentifierMap = {};
         var imports = this.find('ImportDeclaration');
@@ -71,7 +67,7 @@ class Module extends AbstractSyntaxTree {
                 };
             }
             return node.specifiers.map(function (specifier) {
-                if (this.isImportDefaultSpecifier(specifier)) {
+                if (specifier.type === 'ImportDefaultSpecifier' || specifier.type === 'ImportNamespaceSpecifier') {
                     return {
                         element: node.source.value,
                         param: specifier.local.name
@@ -80,7 +76,12 @@ class Module extends AbstractSyntaxTree {
                 if (specifier.type === 'ImportSpecifier') {
                     var identifier;
                     var value = node.source.value;
-                    if (dependencyToIdentifierMap.hasOwnProperty(value)) {
+                    if (specifier.imported.name !== specifier.local.name) {
+                        return {
+                            element: node.source.value,
+                            param: specifier.local.name
+                        };
+                    } else if (dependencyToIdentifierMap.hasOwnProperty(value)) {
                         identifier = dependencyToIdentifierMap[value];
                     } else {
                         identifier = this.generateFreeIdentifier(Object.values(dependencyToIdentifierMap));
@@ -99,6 +100,7 @@ class Module extends AbstractSyntaxTree {
     convertExportNamedDeclarations () {
         var declarations = this.find('ExportNamedDeclaration');
         this.convertExportNamedDeclarationToDeclaration();
+        this.remove({ type: 'ExportNamedDeclaration' });
         this.append({
             type: 'ReturnStatement',
             argument: this.getObjectExpression(declarations)
@@ -108,7 +110,7 @@ class Module extends AbstractSyntaxTree {
     convertExportNamedDeclarationToDeclaration () {
         this.replace({
             enter: function (node) {
-                if (node.type === 'ExportNamedDeclaration') {
+                if (node.type === 'ExportNamedDeclaration' && node.declaration) {
                     return node.declaration;
                 }
             }
@@ -174,19 +176,28 @@ class Module extends AbstractSyntaxTree {
         return {
             "type": "ObjectExpression",
             "properties": declarations.map(declaration => {
+                if (!declaration.declaration && declaration.specifiers) {
+                    return {
+                        type: "Property",
+                        key: declaration.specifiers[0].local,
+                        value: declaration.specifiers[0].local,
+                        shorthand: true,
+                        kind: "init"
+                    };
+                }
                 if (declaration.declaration.type === "VariableDeclaration") {
                     return {
                         type: "Property",
-                        "key": declaration.declaration.declarations[0].id,
-                        "value": declaration.declaration.declarations[0].id,
-                        "kind": "init"
+                        key: declaration.declaration.declarations[0].id,
+                        value: declaration.declaration.declarations[0].id,
+                        kind: "init"
                     };
                 }
                 return {
                     type: "Property",
-                    "key": declaration.declaration.id,
-                    "value": declaration.declaration.id,
-                    "kind": "init"
+                    key: declaration.declaration.id,
+                    value: declaration.declaration.id,
+                    kind: "init"
                 };
 
             })

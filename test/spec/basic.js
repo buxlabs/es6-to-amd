@@ -86,3 +86,15 @@ test('it works for named exports with other code', t => {
 test('it works for file with named exports and imports', t => {
     t.truthy(convert('multiple-exports-and-import')); 
 });
+
+test('it imports complete modules', t => {
+    t.truthy(convert('import-complete-module'));    
+});
+
+test('it works for renamed imports', t => {
+    t.truthy(convert('renamed-imports'));    
+});
+
+test('it works for revealing exports', t => {
+    t.truthy(convert('revealing-exports'));    
+});
