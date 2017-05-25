@@ -173,6 +173,7 @@ class Module extends AbstractSyntaxTree {
     }
     
     getObjectExpression (declarations) {
+        var properties = [];
         return {
             "type": "ObjectExpression",
             "properties": declarations.map(declaration => {

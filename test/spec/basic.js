@@ -98,3 +98,7 @@ test('it works for renamed imports', t => {
 test('it works for revealing exports', t => {
     t.truthy(convert('revealing-exports'));    
 });
+
+test.skip('it works multiple revealing exports', t => {
+    t.truthy(convert('multiple-revealing-exports'));
+});
