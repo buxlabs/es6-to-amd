@@ -104,7 +104,13 @@ class Module extends AbstractSyntaxTree {
     
     convertExportNamedToReturn () {
         var declarations = this.getExportNamedDeclarations();
-        this.remove({ type: 'ExportNamedDeclaration' });
+        this.replace({
+            enter: function (node) {
+                if (node.type === 'ExportNamedDeclaration') {
+                    return node.declaration;
+                }
+            }
+        });
         this.append({
             type: 'ReturnStatement',
             argument: this.getObjectExpression(declarations)
@@ -132,15 +138,9 @@ class Module extends AbstractSyntaxTree {
     }
     
     getExportNamedDeclarations () {
-        var imports = this.ast.body.filter(node => {
+        return this.ast.body.filter(node => {
             return node.type === 'ExportNamedDeclaration';
         });
-        return imports.reduce((previous, current) => {
-            if (current.declaration.type === 'FunctionDeclaration') {
-                return previous.concat(current.declaration);
-            }
-            return previous.concat(current.declaration.declarations);
-        }, []);
     }
     
     convertExportNamedDeclarationToDefine () {
@@ -156,21 +156,18 @@ class Module extends AbstractSyntaxTree {
         this.ast.body = this.ast.body.filter(node => {
             return node.type !== 'ExportNamedDeclaration';
         });
-        var hasOtherCode = this.ast.body.length > 0;
-        return this.convertExportNamedDeclarationToBody(hasOtherCode, declarations);
+        return this.convertExportNamedDeclarationToBody(declarations);
     }
     
-    convertExportNamedDeclarationToBody (hasOtherCode, declarations) {
-        if (hasOtherCode) {
-            this.prependUseStrict();
-            return this.getFunctionExpression([], this.ast.body.concat([
-                {
-                    type: 'ReturnStatement',
-                    argument: this.getObjectExpression(declarations)
-                }
-            ]));
-        }
-        return this.getObjectExpression(declarations);
+    convertExportNamedDeclarationToBody (declarations) {
+        this.prependUseStrict();
+        return this.getFunctionExpression([], this.ast.body.concat(
+            declarations.map(declaration => declaration.declaration), 
+            [{
+                type: 'ReturnStatement',
+                argument: this.getObjectExpression(declarations)
+            }]
+        ));
     }
     
     getFunctionExpression (params, body) {
@@ -188,18 +185,21 @@ class Module extends AbstractSyntaxTree {
         return {
             "type": "ObjectExpression",
             "properties": declarations.map(declaration => {
-                if (declaration.type === 'FunctionDeclaration') {
+                if (declaration.declaration.type === "VariableDeclaration") {
                     return {
                         type: "Property",
-                        key: declaration.id,
-                        value: declaration
+                        "key": declaration.declaration.declarations[0].id,
+                        "value": declaration.declaration.declarations[0].id,
+                        "kind": "init"
                     };
                 }
                 return {
                     type: "Property",
-                    key: declaration.id,
-                    value: declaration.init
+                    "key": declaration.declaration.id,
+                    "value": declaration.declaration.id,
+                    "kind": "init"
                 };
+
             })
         };
     }
@@ -241,27 +241,20 @@ class Module extends AbstractSyntaxTree {
         .map(function(param) {
             return { type: 'Identifier', name: param };
         });
-        this.ast.body = [{
-            type: 'ExpressionStatement',
-            expression: {
-                type: 'CallExpression',
-                callee: { type: 'Identifier', name: 'define' },
-                arguments: [
-                    {
-                        type: 'ArrayExpression',
-                        elements: elements
-                    },
-                    {
-                        type: 'FunctionExpression',
-                        params: params,
-                        body: {
-                            type: 'BlockStatement',
-                            body: body
-                        }
-                    }
-                ]
+        this.ast.body = [this.getDefine([
+            {
+                type: 'ArrayExpression',
+                elements: elements
+            },
+            {
+                type: 'FunctionExpression',
+                params: params,
+                body: {
+                    type: 'BlockStatement',
+                    body: body
+                }
             }
-        }];
+        ])];
     }
 
 }

@@ -1,3 +1,7 @@
+## 0.4.3
+
+- add: support mixed ExportNamedDeclaration
+
 ## 0.4.2
 
 - add: support ImportStatement with ExportNamedDeclaration

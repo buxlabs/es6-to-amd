@@ -17,7 +17,11 @@ function convert (name) {
     const result = es6toamd(input);
     const isValid = compare(output, result);
     if (!isValid) {
+        console.log('-- INPUT --');
+        console.log(input);
+        console.log('-- OUTPUT --');
         console.log(output);
+        console.log('-- RESULT --');
         console.log(result);
     }
     return isValid;
@@ -73,4 +77,8 @@ test('it works for named exports with other code', t => {
 
 test('it works for file with named exports and imports', t => {
     t.truthy(convert('multiple-exports-and-import')); 
+});
+
+test('it works for multiple named exports', t => {
+    t.truthy(convert('multiple-named-exports'));
 });

@@ -4,10 +4,12 @@ define(function () {
         return '1' + str + '1';
     }
     
+    function guid() {
+        return hash('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
+    }  
+    
     return {
-        guid: function guid() {
-            return hash('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
-        }  
+        guid: guid
     };
 
 });
