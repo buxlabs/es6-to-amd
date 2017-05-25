@@ -6,17 +6,17 @@ const AbstractSyntaxTree = require('@buxlabs/ast');
 class Module extends AbstractSyntaxTree {
 
     convert () {
-        var pairs = this.getDependencyPairs();
-        if (pairs.length > 0) {
+        if (this.has('ImportDeclaration')) {
+            var pairs = this.getDependencyPairs();
             this.remove({ type: 'ImportDeclaration' });
-            this.prependUseStrict();
+            this.normalizePairs(pairs);
             if (this.has('ExportDefaultDeclaration')) {
-                this.convertExportDefaultToReturn();
+                this.convertExportDefaultDeclarationToReturn();
             } else if (this.has('ExportNamedDeclaration')) {
-                this.convertExportNamedToReturn();
+                this.convertExportNamedDeclarations();
             }
-            this.normalizeIdentifiers(pairs);
-            this.wrapWithDefineWithPairs(_.unique(pairs, item => item.element + item.param));
+            this.prependUseStrictLiteral();
+            this.wrapWithDefineWithArrayExpression(pairs);
         } else if (this.has('ExportDefaultDeclaration')) {
             this.convertExportDefaultDeclarationToDefine();
         } else if (this.has('ExportNamedDeclaration')) {
@@ -24,7 +24,7 @@ class Module extends AbstractSyntaxTree {
         }
     }
     
-    prependUseStrict () {
+    prependUseStrictLiteral () {
         this.prepend({
             type: 'ExpressionStatement',
             expression: {
@@ -35,11 +35,12 @@ class Module extends AbstractSyntaxTree {
     }
     
     getIdentifiers () {
-        return _.unique(this.find('Identifier').map(item => item.name));
+        return this.find('Identifier');
     }
     
     generateFreeIdentifier (takenIdentifiers) {
-        var identifiers = _.unique(_.flatten(this.getIdentifiers())).concat(takenIdentifiers);
+        var ids = _.unique(this.getIdentifiers().map(item => item.name));
+        var identifiers = _.unique(_.flatten(ids)).concat(takenIdentifiers);
         var alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         var index = 0;
         while (identifiers.indexOf(alphabet[index]) !== -1) {
@@ -51,59 +52,60 @@ class Module extends AbstractSyntaxTree {
         }
         return alphabet[index];
     }
+    
+    isSideEffectImportDeclaration(node) {
+        return node.source && node.source.type === 'Literal' && node.specifiers.length === 0;
+    }
+
+    isImportDefaultSpecifier(specifier) {
+        return specifier.type === 'ImportDefaultSpecifier';
+    }
 
     getDependencyPairs () {
         var dependencyToIdentifierMap = {};
-        return _.flatten(this.ast.body.map(function (node) {
-            if (node.type === 'ImportDeclaration') {
-                if (node.source &&
-                    node.source.type === 'Literal' &&
-                    node.specifiers.length === 0) {
-                    return {
-                        element: node.source.value
-                    };
-                }
-                return node.specifiers.map(function (specifier) {
-                    
-                    if (specifier.type === 'ImportSpecifier') {
-                        var identifier;
-                        var value = node.source.value;
-                        if (dependencyToIdentifierMap.hasOwnProperty(value)) {
-                            identifier = dependencyToIdentifierMap[value];
-                        } else {
-                            identifier = this.generateFreeIdentifier(Object.values(dependencyToIdentifierMap));
-                            dependencyToIdentifierMap[value] = identifier;
-                        }
-                        return {
-                            element: node.source.value,
-                            param: identifier,
-                            name: specifier.local.name
-                        };
-                    }
+        var imports = this.find('ImportDeclaration');
+        return _.flatten(imports.map(node => {
+            if (this.isSideEffectImportDeclaration(node)) {
+                return {
+                    element: node.source.value
+                };
+            }
+            return node.specifiers.map(function (specifier) {
+                if (this.isImportDefaultSpecifier(specifier)) {
                     return {
                         element: node.source.value,
                         param: specifier.local.name
                     };
-                }.bind(this));
-            }
-            return null;
-        }.bind(this)).filter(node => !!node));
+                }
+                if (specifier.type === 'ImportSpecifier') {
+                    var identifier;
+                    var value = node.source.value;
+                    if (dependencyToIdentifierMap.hasOwnProperty(value)) {
+                        identifier = dependencyToIdentifierMap[value];
+                    } else {
+                        identifier = this.generateFreeIdentifier(Object.values(dependencyToIdentifierMap));
+                        dependencyToIdentifierMap[value] = identifier;
+                    }
+                    return {
+                        element: node.source.value,
+                        param: identifier,
+                        name: specifier.local.name
+                    };
+                }
+            }.bind(this));
+        }));
     }
-
-    convertExportDefaultToReturn () {
-        this.ast.body = this.ast.body.map(function (node) {
-            if (node.type === 'ExportDefaultDeclaration') {
-                return {
-                    type: 'ReturnStatement',
-                    argument: node.declaration
-                };
-            }
-            return node;
+    
+    convertExportNamedDeclarations () {
+        var declarations = this.find('ExportNamedDeclaration');
+        this.convertExportNamedDeclarationToDeclaration();
+        this.append({
+            type: 'ReturnStatement',
+            argument: this.getObjectExpression(declarations)
         });
     }
     
-    convertExportNamedToReturn () {
-        var declarations = this.getExportNamedDeclarations();
+    convertExportNamedDeclarationToDeclaration () {
         this.replace({
             enter: function (node) {
                 if (node.type === 'ExportNamedDeclaration') {
@@ -111,16 +113,23 @@ class Module extends AbstractSyntaxTree {
                 }
             }
         });
-        this.append({
-            type: 'ReturnStatement',
-            argument: this.getObjectExpression(declarations)
-        });
     }
 
     convertExportDefaultDeclarationToDefine () {
-        this.prependUseStrict();
+        this.prependUseStrictLiteral();
+        this.convertExportDefaultDeclarationToReturn();
+        this.wrap(body => {
+            return [this.getDefineWithFunctionExpression(body)];
+        });
+    }
+    
+    getDefineWithFunctionExpression (body) {
+        return this.getDefine([this.getFunctionExpression([], body)]);
+    }
+    
+    convertExportDefaultDeclarationToReturn () {
         this.replace({
-            enter: function (node) {
+            enter: node => {
                 if (node.type === 'ExportDefaultDeclaration') {
                     node.type = 'ReturnStatement';
                     node.argument = node.declaration;
@@ -128,15 +137,7 @@ class Module extends AbstractSyntaxTree {
                 }
             }
         });
-        var body = this.ast.body;
-        this.ast.body = [this.getDefine([{
-            type: 'FunctionExpression',
-            params: [],
-            body: {
-                type: 'BlockStatement',
-                body: body
-            }
-        }])];
+
     }
     
     getDefine (nodes) {
@@ -150,37 +151,12 @@ class Module extends AbstractSyntaxTree {
         };
     }
     
-    getExportNamedDeclarations () {
-        return this.ast.body.filter(node => {
-            return node.type === 'ExportNamedDeclaration';
-        });
-    }
-    
     convertExportNamedDeclarationToDefine () {
-        this.ast.body = [
-            this.getDefine([
-                this.getExportNamedDeclarationsBody()
-            ])
-        ];
-    }
-    
-    getExportNamedDeclarationsBody () {
-        var declarations = this.getExportNamedDeclarations();
-        this.ast.body = this.ast.body.filter(node => {
-            return node.type !== 'ExportNamedDeclaration';
+        this.prependUseStrictLiteral();
+        this.convertExportNamedDeclarations();
+        this.wrap(body => {
+            return [this.getDefineWithFunctionExpression(body)];
         });
-        return this.convertExportNamedDeclarationToBody(declarations);
-    }
-    
-    convertExportNamedDeclarationToBody (declarations) {
-        this.prependUseStrict();
-        return this.getFunctionExpression([], this.ast.body.concat(
-            declarations.map(declaration => declaration.declaration), 
-            [{
-                type: 'ReturnStatement',
-                argument: this.getObjectExpression(declarations)
-            }]
-        ));
     }
     
     getFunctionExpression (params, body) {
@@ -217,7 +193,7 @@ class Module extends AbstractSyntaxTree {
         };
     }
 
-    normalizeIdentifiers (pairs) {
+    normalizePairs (pairs) {
         let nodes = pairs.filter(pair => !!pair.name);
         let names = nodes.map(node => node.name);
         this.replace({
@@ -243,9 +219,13 @@ class Module extends AbstractSyntaxTree {
             }
         });
     }
+    
+    getArrayExpression (elements) {
+        return { type: 'ArrayExpression', elements: elements };
+    }
 
-    wrapWithDefineWithPairs (pairs) {
-        var body = this.ast.body;
+    wrapWithDefineWithArrayExpression (pairs) {
+        pairs = _.unique(pairs, item => item.element + item.param);
         var elements = pairs.map(pair => pair.element)
         .map(function (element) {
             return { type: 'Literal', value: element };
@@ -254,20 +234,12 @@ class Module extends AbstractSyntaxTree {
         .map(function(param) {
             return { type: 'Identifier', name: param };
         });
-        this.ast.body = [this.getDefine([
-            {
-                type: 'ArrayExpression',
-                elements: elements
-            },
-            {
-                type: 'FunctionExpression',
-                params: params,
-                body: {
-                    type: 'BlockStatement',
-                    body: body
-                }
-            }
-        ])];
+        this.wrap(body => {
+            return [this.getDefine([
+                this.getArrayExpression(elements),
+                this.getFunctionExpression(params, body)
+            ])];
+        });
     }
 
 }
