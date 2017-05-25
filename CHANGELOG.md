@@ -1,3 +1,7 @@
+## 0.4.5
+
+- refactor: first pass of code simplification
+
 ## 0.4.4
 
 - add: support ExportDefaultDeclaration with other code
