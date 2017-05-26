@@ -99,6 +99,6 @@ test('it works for revealing exports', t => {
     t.truthy(convert('revealing-exports'));    
 });
 
-test.skip('it works multiple revealing exports', t => {
+test('it works multiple revealing exports', t => {
     t.truthy(convert('multiple-revealing-exports'));
 });

@@ -7,21 +7,25 @@ class Module extends AbstractSyntaxTree {
 
     convert () {
         if (this.has('ImportDeclaration')) {
-            var pairs = this.getDependencyPairs();
-            this.remove({ type: 'ImportDeclaration' });
-            this.normalizePairs(pairs);
-            if (this.has('ExportDefaultDeclaration')) {
-                this.convertExportDefaultDeclarationToReturn();
-            } else if (this.has('ExportNamedDeclaration')) {
-                this.convertExportNamedDeclarations();
-            }
-            this.prependUseStrictLiteral();
-            this.wrapWithDefineWithArrayExpression(pairs);
+            this.convertCodeWithImportDeclarations();
         } else if (this.has('ExportDefaultDeclaration')) {
             this.convertExportDefaultDeclarationToDefine();
         } else if (this.has('ExportNamedDeclaration')) {
             this.convertExportNamedDeclarationToDefine();
         }
+    }
+    
+    convertCodeWithImportDeclarations () {
+        var pairs = this.getDependencyPairs();
+        this.remove({ type: 'ImportDeclaration' });
+        this.normalizePairs(pairs);
+        if (this.has('ExportDefaultDeclaration')) {
+            this.convertExportDefaultDeclarationToReturn();
+        } else if (this.has('ExportNamedDeclaration')) {
+            this.convertExportNamedDeclarations();
+        }
+        this.prependUseStrictLiteral();
+        this.wrapWithDefineWithArrayExpression(pairs);
     }
     
     prependUseStrictLiteral () {
@@ -34,13 +38,7 @@ class Module extends AbstractSyntaxTree {
         });
     }
     
-    getIdentifiers () {
-        return this.find('Identifier');
-    }
-    
-    generateFreeIdentifier (takenIdentifiers) {
-        var ids = _.unique(this.getIdentifiers().map(item => item.name));
-        var identifiers = _.unique(_.flatten(ids)).concat(takenIdentifiers);
+    getFreeIdentifier (identifiers) {
         var alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         var index = 0;
         while (identifiers.indexOf(alphabet[index]) !== -1) {
@@ -60,6 +58,7 @@ class Module extends AbstractSyntaxTree {
     getDependencyPairs () {
         var dependencyToIdentifierMap = {};
         var imports = this.find('ImportDeclaration');
+        var ids = _.unique(imports.map(item => item.name));
         return _.flatten(imports.map(node => {
             if (this.isSideEffectImportDeclaration(node)) {
                 return {
@@ -68,23 +67,18 @@ class Module extends AbstractSyntaxTree {
             }
             return node.specifiers.map(function (specifier) {
                 if (specifier.type === 'ImportDefaultSpecifier' || specifier.type === 'ImportNamespaceSpecifier') {
-                    return {
-                        element: node.source.value,
-                        param: specifier.local.name
-                    };
+                    return this.getLocalSpecifier(node, specifier);
                 }
                 if (specifier.type === 'ImportSpecifier') {
                     var identifier;
                     var value = node.source.value;
                     if (specifier.imported.name !== specifier.local.name) {
-                        return {
-                            element: node.source.value,
-                            param: specifier.local.name
-                        };
+                        return this.getLocalSpecifier(node, specifier);
                     } else if (dependencyToIdentifierMap.hasOwnProperty(value)) {
                         identifier = dependencyToIdentifierMap[value];
                     } else {
-                        identifier = this.generateFreeIdentifier(Object.values(dependencyToIdentifierMap));
+                        var identifiers = _.unique(_.flatten(ids)).concat(Object.values(dependencyToIdentifierMap));
+                        identifier = this.getFreeIdentifier(identifiers);
                         dependencyToIdentifierMap[value] = identifier;
                     }
                     return {
@@ -95,6 +89,13 @@ class Module extends AbstractSyntaxTree {
                 }
             }.bind(this));
         }));
+    }
+    
+    getLocalSpecifier (node, specifier) {
+        return {
+            element: node.source.value,
+            param: specifier.local.name
+        };
     }
     
     convertExportNamedDeclarations () {
@@ -172,64 +173,68 @@ class Module extends AbstractSyntaxTree {
         };
     }
     
+    getProperty (node, shorthand) {
+        return {
+            type: "Property",
+            key: node,
+            value: node,
+            shorthand: shorthand,
+            kind: "init"
+        };
+    }
+    
     getObjectExpression (declarations) {
-        var properties = [];
         return {
             "type": "ObjectExpression",
-            "properties": declarations.map(declaration => {
-                if (!declaration.declaration && declaration.specifiers) {
-                    return {
-                        type: "Property",
-                        key: declaration.specifiers[0].local,
-                        value: declaration.specifiers[0].local,
-                        shorthand: true,
-                        kind: "init"
-                    };
-                }
-                if (declaration.declaration.type === "VariableDeclaration") {
-                    return {
-                        type: "Property",
-                        key: declaration.declaration.declarations[0].id,
-                        value: declaration.declaration.declarations[0].id,
-                        kind: "init"
-                    };
-                }
-                return {
-                    type: "Property",
-                    key: declaration.declaration.id,
-                    value: declaration.declaration.id,
-                    kind: "init"
-                };
-
-            })
+            "properties": this.mapDeclarationsToProperties(declarations)
         };
+    }
+    
+    mapDeclarationsToProperties (declarations) {
+        return _.flatten(declarations.map(declaration => {
+            if (!declaration.declaration && declaration.specifiers) {
+                return declaration.specifiers.map(node => {
+                    return this.getProperty(node.local, true);
+                });
+            }
+            if (declaration.declaration.type === "VariableDeclaration") {
+                return declaration.declaration.declarations.map(node => {
+                    return this.getProperty(node.id);
+                });
+            }
+            return this.getProperty(declaration.declaration.id);
+        }));
     }
 
     normalizePairs (pairs) {
         let nodes = pairs.filter(pair => !!pair.name);
         let names = nodes.map(node => node.name);
         this.replace({
-            leave: function (current, parent) {
+            leave: (current, parent) => {
                 if (current.type === 'Identifier') {
                     let index = names.indexOf(current.name);
                     if (index !== -1) {
                         let pair = nodes[index];
-                        return {
-                            type: 'MemberExpression',
-                            object: {
-                                type: 'Identifier',
-                                name: pair.param
-                            },
-                            property: {
-                                type: 'Identifier',
-                                name: pair.name
-                            }
-                        };
+                        return this.convertIdentifierToMemberExpression(pair);
                     }
                 }
                 return current;
             }
         });
+    }
+    
+    convertIdentifierToMemberExpression(pair, current) {
+        return {
+            type: 'MemberExpression',
+            object: {
+                type: 'Identifier',
+                name: pair.param
+            },
+            property: {
+                type: 'Identifier',
+                name: pair.name
+            }
+        };
     }
     
     getArrayExpression (elements) {

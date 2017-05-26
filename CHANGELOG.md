@@ -2,6 +2,7 @@
 
 - add: ImportNamespaceSpecifier support
 - add: renamed ImportSpecifier support
+- add: revealing exports support
 
 ## 0.4.5
 
