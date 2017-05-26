@@ -2,6 +2,7 @@
 
 const _ = require('underscore');
 const AbstractSyntaxTree = require('@buxlabs/ast');
+const getFreeIdentifier = require('../lib/getFreeIdentifier');
 
 class Module extends AbstractSyntaxTree {
 
@@ -38,19 +39,6 @@ class Module extends AbstractSyntaxTree {
         });
     }
     
-    getFreeIdentifier (identifiers) {
-        var alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
-        var index = 0;
-        while (identifiers.indexOf(alphabet[index]) !== -1) {
-            index += 1;
-            if (index === alphabet.length) {
-                index = 0;
-                alphabet = alphabet.map(character => '_' + character);
-            }
-        }
-        return alphabet[index];
-    }
-    
     isSideEffectImportDeclaration(node) {
         return node.source && node.source.type === 'Literal' && node.specifiers.length === 0;
     }
@@ -59,7 +47,7 @@ class Module extends AbstractSyntaxTree {
         var dependencyToIdentifierMap = {};
         var imports = this.find('ImportDeclaration');
         var ids = _.unique(imports.map(item => item.name));
-        return _.flatten(imports.map(node => {
+        var result = _.flatten(imports.map(node => {
             if (this.isSideEffectImportDeclaration(node)) {
                 return {
                     element: node.source.value
@@ -78,7 +66,7 @@ class Module extends AbstractSyntaxTree {
                         identifier = dependencyToIdentifierMap[value];
                     } else {
                         var identifiers = _.unique(_.flatten(ids)).concat(Object.values(dependencyToIdentifierMap));
-                        identifier = this.getFreeIdentifier(identifiers);
+                        identifier = getFreeIdentifier(identifiers);
                         dependencyToIdentifierMap[value] = identifier;
                     }
                     return {
@@ -89,6 +77,7 @@ class Module extends AbstractSyntaxTree {
                 }
             }.bind(this));
         }));
+        return result;
     }
     
     getLocalSpecifier (node, specifier) {
@@ -191,19 +180,21 @@ class Module extends AbstractSyntaxTree {
     }
     
     mapDeclarationsToProperties (declarations) {
-        return _.flatten(declarations.map(declaration => {
-            if (!declaration.declaration && declaration.specifiers) {
-                return declaration.specifiers.map(node => {
-                    return this.getProperty(node.local, true);
-                });
-            }
-            if (declaration.declaration.type === "VariableDeclaration") {
-                return declaration.declaration.declarations.map(node => {
-                    return this.getProperty(node.id);
-                });
-            }
-            return this.getProperty(declaration.declaration.id);
-        }));
+        return _.flatten(declarations.map(this.mapDeclarationToProperty.bind(this)));
+    }
+    
+    mapDeclarationToProperty (declaration) {
+        if (!declaration.declaration && declaration.specifiers) {
+            return declaration.specifiers.map(node => {
+                return this.getProperty(node.local, true);
+            });
+        }
+        if (declaration.declaration.type === "VariableDeclaration") {
+            return declaration.declaration.declarations.map(node => {
+                return this.getProperty(node.id);
+            });
+        }
+        return this.getProperty(declaration.declaration.id);
     }
 
     normalizePairs (pairs) {
