@@ -28,7 +28,7 @@
     "nyc": "11.0.3"
   },
   "dependencies": {
-    "@buxlabs/ast": "0.4.2",
+    "@buxlabs/ast": "0.4.3",
     "underscore": "1.8.3"
   }
 }
