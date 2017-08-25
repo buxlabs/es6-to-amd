@@ -102,3 +102,11 @@ test('it works for revealing exports', t => {
 test('it works multiple revealing exports', t => {
     t.truthy(convert('multiple-revealing-exports'));
 });
+
+test('it works for default array export', t => {
+    t.truthy(convert('export-default-array'));    
+});
+
+test('it works for named function expression', t => {
+    t.truthy(convert('named-function-expression')); 
+});
