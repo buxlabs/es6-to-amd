@@ -1,3 +1,7 @@
+## 0.5.2
+
+- edit: move getFreeIdentifier method to @buxlabs/utils
+
 ## 0.4.6
 
 - add: ImportNamespaceSpecifier support

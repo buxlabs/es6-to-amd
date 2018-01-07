@@ -2,7 +2,7 @@
 
 const _ = require('underscore');
 const AbstractSyntaxTree = require('@buxlabs/ast');
-const getFreeIdentifier = require('../lib/getFreeIdentifier');
+const { array } = require('@buxlabs/utils')
 
 class Module extends AbstractSyntaxTree {
 
@@ -66,7 +66,7 @@ class Module extends AbstractSyntaxTree {
                         identifier = dependencyToIdentifierMap[value];
                     } else {
                         var identifiers = _.unique(_.flatten(ids)).concat(Object.values(dependencyToIdentifierMap));
-                        identifier = getFreeIdentifier(identifiers);
+                        identifier = array.identifier(identifiers);
                         dependencyToIdentifierMap[value] = identifier;
                     }
                     return {
