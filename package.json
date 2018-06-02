@@ -25,7 +25,7 @@
   "homepage": "https://github.com/buxlabs/es6-to-amd#readme",
   "devDependencies": {
     "ava": "^0.25.0",
-    "nyc": "^11.1.0"
+    "nyc": "^12.0.1"
   },
   "dependencies": {
     "@buxlabs/ast": "^0.10.0",
