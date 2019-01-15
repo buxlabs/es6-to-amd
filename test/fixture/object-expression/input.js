@@ -2,9 +2,9 @@ export default {
     getErrorText: function (status) {
         switch (status) {
         case 413:
-            return 'Lorem ipsum';
+            return "Lorem ipsum";
         default:
-            return 'Dolor sit amet';
+            return "Dolor sit amet";
         }
     }
 };

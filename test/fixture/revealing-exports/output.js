@@ -1,5 +1,5 @@
 define(function () {
-    'use strict';
-    const FOO = 'HELLO';
-    return { FOO }; 
+    "use strict";
+    const FOO = "HELLO";
+    return { FOO };
 });

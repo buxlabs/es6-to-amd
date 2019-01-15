@@ -1,5 +1,5 @@
 define(function () {
-    'use strict';
-    return 'hello world';
+    "use strict";
+    return "hello world";
 });
 

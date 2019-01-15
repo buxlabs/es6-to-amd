@@ -1,2 +1,2 @@
-const FOO = 'HELLO';
+const FOO = "HELLO";
 export { FOO };

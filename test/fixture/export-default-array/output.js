@@ -1,4 +1,4 @@
 define(function () {
-    'use strict';
-    return ['foo', 'bar'];
+    "use strict";
+    return ["foo", "bar"];
 });

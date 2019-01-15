@@ -1,5 +1,5 @@
 define(function () {
-    'use strict';
+    "use strict";
     const sqrt = Math.sqrt;
     function square(x) {
         return x * x;

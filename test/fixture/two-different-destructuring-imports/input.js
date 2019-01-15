@@ -1,5 +1,5 @@
-import { Model } from 'backbone';
-import { View } from 'marionette';
+import { Model } from "backbone";
+import { View } from "marionette";
 
 var MyModel = Model.extend({});
 

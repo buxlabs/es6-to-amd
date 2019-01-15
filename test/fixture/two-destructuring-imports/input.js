@@ -1,4 +1,4 @@
-import { Model, Collection } from 'backbone';
+import { Model, Collection } from "backbone";
 
 var MyModel = Model.extend({});
 

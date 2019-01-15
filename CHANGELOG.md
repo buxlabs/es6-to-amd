@@ -1,3 +1,7 @@
+## 0.6.0
+
+- update: all dependencies
+
 ## 0.5.2
 
 - edit: move getFreeIdentifier method to @buxlabs/utils

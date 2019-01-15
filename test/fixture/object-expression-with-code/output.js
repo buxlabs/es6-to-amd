@@ -1,10 +1,10 @@
 define(function () {
-    'use strict';
+    "use strict";
     function hash(str) {
-        return str + '1';
+        return str + "1";
     }
-    
+
     return function (str) {
-        return '2' + hash(str);
+        return "2" + hash(str);
     };
 });

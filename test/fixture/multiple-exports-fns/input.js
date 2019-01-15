@@ -3,5 +3,5 @@ function hash(str) {
 }
 
 export function guid() {
-  return hash('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
+  return hash("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx");
 }
