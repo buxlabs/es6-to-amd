@@ -1,8 +1,28 @@
-# ES6 to AMD converter
+# ES to AMD converter
 
-## Installation
+![npm](https://img.shields.io/npm/v/buxlabs/es6-to-amd.svg)
 
-`npm install @buxlabs/es6-to-amd`
+> ES (EcmaScript) Module to AMD (Asynchronous Module Definition) converter
+
+## Table of Contents
+
+- [Background](#background)
+- [Install](#install)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Background
+
+The import/export syntax is becoming more and more popular. Given a huge, legacy AMD application it's not trivial to migrate it all at once. The converter can help you transpile the modules into the AMD syntax temporarily for backwards compatibility.
+
+## Install
+
+```
+npm install @buxlabs/es6-to-amd
+```
 
 ## Usage
 
@@ -16,9 +36,9 @@ const source = 'export default { hello: 'world' }';
 const result = es6toamd(source); // define({ hello: 'world' });
 ```
 
-## Example:
+## Examples
 
-**ES6**
+**ES**
 
 ```javascript
 import Backbone from 'backbone';
@@ -35,4 +55,19 @@ define(['backbone'], function (Backbone) {
 });
 ```
 
-There are more examples in the test/fixture directory
+There are more examples in the test/fixture directory.
+
+## Maintainers
+
+[@emilos](https://github.com/emilos).
+
+## Contributing
+
+All contributions are highly appreciated! [Open an issue](https://github.com/buxlabs/abstract-syntax-tree/issues/new) or a submit PR.
+
+The lib follows the tdd approach and is expected to have a high code coverage. Please follow the [Contributor Covenant Code of Conduct](https://github.com/buxlabs/abstract-syntax-tree/blob/master/CODE_OF_CONDUCT.md).
+
+## License
+
+MIT © buxlabs
+
