@@ -63,9 +63,7 @@ There are more examples in the test/fixture directory.
 
 ## Contributing
 
-All contributions are highly appreciated! [Open an issue](https://github.com/buxlabs/abstract-syntax-tree/issues/new) or a submit PR.
-
-The lib follows the tdd approach and is expected to have a high code coverage. Please follow the [Contributor Covenant Code of Conduct](https://github.com/buxlabs/abstract-syntax-tree/blob/master/CODE_OF_CONDUCT.md).
+All contributions are highly appreciated! Open an issue or a submit PR.
 
 ## License
 
