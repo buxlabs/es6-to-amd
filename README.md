@@ -1,6 +1,6 @@
 # ES to AMD converter
 
-![npm](https://img.shields.io/npm/v/buxlabs/es6-to-amd.svg)
+![npm](https://img.shields.io/npm/v/@buxlabs/es6-to-amd.svg)
 
 > ES (EcmaScript) Module to AMD (Asynchronous Module Definition) converter
 
