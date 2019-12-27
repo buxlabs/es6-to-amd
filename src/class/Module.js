@@ -77,7 +77,10 @@ class Module extends AbstractSyntaxTree {
         }
       }.bind(this))
     }))
-    return result
+    return result.sort((a, b) => {
+      if (a.param && !b.param) { return -1 }
+      return 0
+    })
   }
 
   getLocalSpecifier (node, specifier) {
