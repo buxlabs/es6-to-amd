@@ -2,7 +2,8 @@
 
 const { unique } = require('underscore')
 const AbstractSyntaxTree = require('abstract-syntax-tree')
-const { identifier, flatten } = require('pure-utilities/array')
+const { identifier } = require('pure-utilities/array')
+const { flatten } = require('pure-utilities/collection')
 
 class Module extends AbstractSyntaxTree {
   convert () {
