@@ -61,7 +61,7 @@ class Module extends AbstractSyntaxTree {
           var value = node.source.value
           if (specifier.imported.name !== specifier.local.name) {
             return this.getLocalSpecifier(node, specifier)
-          } else if (dependencyToIdentifierMap.hasOwnProperty(value)) {
+          } else if (Object.prototype.hasOwnProperty.call(dependencyToIdentifierMap, value)) {
             param = dependencyToIdentifierMap[value]
           } else {
             var identifiers = unique(flatten(ids)).concat(Object.values(dependencyToIdentifierMap))
@@ -172,8 +172,8 @@ class Module extends AbstractSyntaxTree {
 
   getObjectExpression (declarations) {
     return {
-      'type': 'ObjectExpression',
-      'properties': this.mapDeclarationsToProperties(declarations)
+      type: 'ObjectExpression',
+      properties: this.mapDeclarationsToProperties(declarations)
     }
   }
 
@@ -196,14 +196,14 @@ class Module extends AbstractSyntaxTree {
   }
 
   normalizePairs (pairs) {
-    let nodes = pairs.filter(pair => !!pair.name)
-    let names = nodes.map(node => node.name)
+    const nodes = pairs.filter(pair => !!pair.name)
+    const names = nodes.map(node => node.name)
     this.replace({
       leave: (current, parent) => {
         if (current.type === 'Identifier') {
-          let index = names.indexOf(current.name)
+          const index = names.indexOf(current.name)
           if (index !== -1) {
-            let pair = nodes[index]
+            const pair = nodes[index]
             return this.convertIdentifierToMemberExpression(pair)
           }
         }
