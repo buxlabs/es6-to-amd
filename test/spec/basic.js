@@ -118,3 +118,7 @@ test('it works for named function expression', t => {
 test('it works for dynamic imports', t => {
   t.truthy(convert('dynamic-import'))
 })
+
+test('it works for chained dynamic imports', t => {
+  t.truthy(convert('chained-dynamic-imports'))
+})
