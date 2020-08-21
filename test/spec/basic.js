@@ -114,3 +114,7 @@ test('it works for default array export', t => {
 test('it works for named function expression', t => {
   t.truthy(convert('named-function-expression'))
 })
+
+test('it works for dynamic imports', t => {
+  t.truthy(convert('dynamic-import'))
+})
