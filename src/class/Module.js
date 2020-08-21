@@ -101,9 +101,10 @@ class Module extends AbstractSyntaxTree {
         return node
       }
       var resolve = { type: 'Identifier', name: 'resolve' }
+      var reject = { type: 'Identifier', name: 'reject' }
       return this.getNewExpression('Promise', [
-        this.getFunctionExpression([resolve], [
-          this.getCallExpression('require', [this.getArrayExpression([node.source]), resolve])
+        this.getFunctionExpression([resolve, reject], [
+          this.getCallExpression('require', [this.getArrayExpression([node.source]), resolve, reject])
         ])
       ])
     })
