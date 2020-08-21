@@ -79,6 +79,7 @@ class Module extends AbstractSyntaxTree {
     }))
     return result.sort((a, b) => {
       if (a.param && !b.param) { return -1 }
+      if (!a.param && b.param) { return 1 }
       return 0
     })
   }
