@@ -30,7 +30,7 @@
     "standard": "^14.3.4"
   },
   "dependencies": {
-    "abstract-syntax-tree": "^2.8.5",
+    "abstract-syntax-tree": "^2.9.3",
     "pure-utilities": "^1.2.0",
     "underscore": "^1.10.2"
   },
