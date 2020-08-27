@@ -5,7 +5,7 @@ import('foo.js').then(function(foo) {
 });
 
 import('bar' + '.js').then(function(bar) {
-	console.log(bar);
+	console.log(bar.default);
 });
 
 var dynamic = 'foobar';

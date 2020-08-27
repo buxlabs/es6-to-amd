@@ -102,9 +102,36 @@ class Module extends AbstractSyntaxTree {
       }
       var resolve = { type: 'Identifier', name: 'resolve' }
       var reject = { type: 'Identifier', name: 'reject' }
+      var defaultIdentifier = { type: 'Identifier', name: 'default' }
+      var value = { type: 'Identifier', name: 'value' }
+      var module = { type: 'Identifier', name: 'module' }
+      var enumerable = { type: 'Identifier', name: 'enumerable' }
       return this.getNewExpression('Promise', [
         this.getFunctionExpression([resolve, reject], [
-          this.getCallExpression('require', [this.getArrayExpression([node.source]), resolve, reject])
+          this.getCallExpression('require', [
+            this.getArrayExpression([node.source]),
+            this.getFunctionExpression([module], [
+              this.getCallExpression('resolve', [
+                this.getConditionalExpression(
+                  this.getLogicalExpression(
+                    this.getBinaryExpression(this.getTypeof(module), '!==', this.getLiteral('object')),
+                    '||',
+                    this.getBinaryExpression(this.getLiteral('default'), 'in', module)
+                  ),
+                  this.getObjectExpression([this.getProperty(defaultIdentifier, module)]),
+                  this.getCallExpression(this.getMemberExpression('Object', 'defineProperty'), [
+                    module,
+                    this.getLiteral('default'),
+                    this.getObjectExpression([
+                      this.getProperty(value, module),
+                      this.getProperty(enumerable, this.getLiteral(false))
+                    ])
+                  ])
+                )
+              ])
+            ]),
+            reject
+          ])
         ])
       ])
     })
@@ -116,7 +143,7 @@ class Module extends AbstractSyntaxTree {
     this.remove({ type: 'ExportNamedDeclaration' })
     this.append({
       type: 'ReturnStatement',
-      argument: this.getObjectExpression(declarations)
+      argument: this.getObjectExpressionForDeclarations(declarations)
     })
   }
 
@@ -195,26 +222,84 @@ class Module extends AbstractSyntaxTree {
   getCallExpression (name, args) {
     return {
       type: 'CallExpression',
-      callee: { type: 'Identifier', name: name },
+      callee: typeof name === 'string' ? { type: 'Identifier', name: name } : name,
       arguments: args
     }
   }
 
-  getProperty (node, shorthand) {
+  getMemberExpression (object, member) {
+    return {
+      type: 'MemberExpression',
+      object: {
+        type: 'Identifier',
+        name: object
+      },
+      property: {
+        type: 'Identifier',
+        name: member
+      }
+    }
+  }
+
+  getConditionalExpression (test, consequent, alternate) {
+    return {
+      type: 'ConditionalExpression',
+      test: test,
+      consequent: consequent,
+      alternate: alternate
+    }
+  }
+
+  getLogicalExpression (left, operator, right) {
+    return {
+      type: 'LogicalExpression',
+      left: left,
+      operator: operator,
+      right: right
+    }
+  }
+
+  getBinaryExpression (left, operator, right) {
+    return {
+      type: 'BinaryExpression',
+      left: left,
+      operator: operator,
+      right: right
+    }
+  }
+
+  getLiteral (value) {
+    return { type: 'Literal', value: value }
+  }
+
+  getTypeof (argument) {
+    return {
+      type: 'UnaryExpression',
+      prefix: true,
+      operator: 'typeof',
+      argument: argument
+    }
+  }
+
+  getProperty (nodeOrKey, shorthandOrValue) {
     return {
       type: 'Property',
-      key: node,
-      value: node,
-      shorthand: shorthand,
+      key: nodeOrKey,
+      value: typeof shorthandOrValue === 'boolean' || typeof shorthandOrValue === 'undefined' ? nodeOrKey : shorthandOrValue,
+      shorthand: shorthandOrValue === true,
       kind: 'init'
     }
   }
 
-  getObjectExpression (declarations) {
+  getObjectExpression (properties) {
     return {
       type: 'ObjectExpression',
-      properties: this.mapDeclarationsToProperties(declarations)
+      properties: properties
     }
+  }
+
+  getObjectExpressionForDeclarations (declarations) {
+    return this.getObjectExpression(this.mapDeclarationsToProperties(declarations))
   }
 
   mapDeclarationsToProperties (declarations) {
