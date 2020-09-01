@@ -5,6 +5,17 @@ const AbstractSyntaxTree = require('abstract-syntax-tree')
 const { identifier } = require('pure-utilities/array')
 const { flatten } = require('pure-utilities/collection')
 
+const {
+  BlockStatement,
+  CallExpression,
+  ExpressionStatement,
+  FunctionExpression,
+  Identifier,
+  Literal,
+  NewExpression,
+  ReturnStatement
+} = AbstractSyntaxTree
+
 class Module extends AbstractSyntaxTree {
   convert () {
     if (this.has('ImportDeclaration') || this.has('ImportExpression')) {
@@ -34,13 +45,9 @@ class Module extends AbstractSyntaxTree {
   }
 
   prependUseStrictLiteral () {
-    this.prepend({
-      type: 'ExpressionStatement',
-      expression: {
-        type: 'Literal',
-        value: 'use strict'
-      }
-    })
+    this.prepend(new ExpressionStatement({
+      expression: new Literal({ value: 'use strict' })
+    }))
   }
 
   isSideEffectImportDeclaration (node) {
@@ -114,17 +121,17 @@ class Module extends AbstractSyntaxTree {
               this.getCallExpression('resolve', [
                 this.getConditionalExpression(
                   this.getLogicalExpression(
-                    this.getBinaryExpression(this.getTypeof(module), '!==', this.getLiteral('object')),
+                    this.getBinaryExpression(this.getTypeof(module), '!==', new Literal({ value: 'object' })),
                     '||',
-                    this.getBinaryExpression(this.getLiteral('default'), 'in', module)
+                    this.getBinaryExpression(new Literal({ value: 'default' }), 'in', module)
                   ),
                   this.getObjectExpression([this.getProperty(defaultIdentifier, module)]),
                   this.getCallExpression(this.getMemberExpression('Object', 'defineProperty'), [
                     module,
-                    this.getLiteral('default'),
+                    new Literal({ value: 'default' }),
                     this.getObjectExpression([
                       this.getProperty(value, module),
-                      this.getProperty(enumerable, this.getLiteral(false))
+                      this.getProperty(enumerable, new Literal({ value: false }))
                     ])
                   ])
                 )
@@ -141,10 +148,9 @@ class Module extends AbstractSyntaxTree {
     var declarations = this.find('ExportNamedDeclaration')
     this.convertExportNamedDeclarationToDeclaration()
     this.remove({ type: 'ExportNamedDeclaration' })
-    this.append({
-      type: 'ReturnStatement',
+    this.append(new ReturnStatement({
       argument: this.getObjectExpressionForDeclarations(declarations)
-    })
+    }))
   }
 
   convertExportNamedDeclarationToDeclaration () {
@@ -182,14 +188,12 @@ class Module extends AbstractSyntaxTree {
   }
 
   getDefine (nodes) {
-    return {
-      type: 'ExpressionStatement',
-      expression: {
-        type: 'CallExpression',
-        callee: { type: 'Identifier', name: 'define' },
+    return new ExpressionStatement({
+      expression: new CallExpression({
+        callee: new Identifier({ name: 'define' }),
         arguments: nodes
-      }
-    }
+      })
+    })
   }
 
   convertExportNamedDeclarationToDefine () {
@@ -201,30 +205,24 @@ class Module extends AbstractSyntaxTree {
   }
 
   getFunctionExpression (params, body) {
-    return {
-      type: 'FunctionExpression',
+    return new FunctionExpression({
       params: params,
-      body: {
-        type: 'BlockStatement',
-        body: body
-      }
-    }
+      body: new BlockStatement({ body })
+    })
   }
 
   getNewExpression (name, args) {
-    return {
-      type: 'NewExpression',
-      callee: { type: 'Identifier', name: name },
+    return new NewExpression({
+      callee: new Identifier({ name }),
       arguments: args
-    }
+    })
   }
 
   getCallExpression (name, args) {
-    return {
-      type: 'CallExpression',
-      callee: typeof name === 'string' ? { type: 'Identifier', name: name } : name,
+    return new CallExpression({
+      callee: typeof name === 'string' ? new Identifier({ name }) : name,
       arguments: args
-    }
+    })
   }
 
   getMemberExpression (object, member) {
@@ -266,10 +264,6 @@ class Module extends AbstractSyntaxTree {
       operator: operator,
       right: right
     }
-  }
-
-  getLiteral (value) {
-    return { type: 'Literal', value: value }
   }
 
   getTypeof (argument) {
