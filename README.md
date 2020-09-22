@@ -63,7 +63,7 @@ There are more examples in the test/fixture directory.
 
 ## Contributing
 
-All contributions are highly appreciated! Open an issue or a submit PR.
+All contributions are highly appreciated! Open an issue or submit a PR.
 
 ## License
 
