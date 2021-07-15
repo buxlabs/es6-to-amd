@@ -28,7 +28,7 @@ class Module extends AbstractSyntaxTree {
   }
 
   convertCodeWithImportDeclarations () {
-    var pairs = this.getDependencyPairs()
+    const pairs = this.getDependencyPairs()
     if (this.has('ImportExpression')) {
       pairs.unshift({ element: 'require', param: 'require' })
       this.convertImportExpressions()
@@ -55,10 +55,10 @@ class Module extends AbstractSyntaxTree {
   }
 
   getDependencyPairs () {
-    var dependencyToIdentifierMap = {}
-    var imports = this.find('ImportDeclaration')
-    var ids = unique(imports.map(item => item.name))
-    var result = flatten(imports.map(node => {
+    const dependencyToIdentifierMap = {}
+    const imports = this.find('ImportDeclaration')
+    const ids = unique(imports.map(item => item.name))
+    const result = flatten(imports.map(node => {
       if (this.isSideEffectImportDeclaration(node)) {
         return {
           element: node.source.value
@@ -69,14 +69,14 @@ class Module extends AbstractSyntaxTree {
           return this.getLocalSpecifier(node, specifier)
         }
         if (specifier.type === 'ImportSpecifier') {
-          var param
-          var value = node.source.value
+          let param
+          const value = node.source.value
           if (specifier.imported.name !== specifier.local.name) {
             return this.getLocalSpecifier(node, specifier)
           } else if (Object.prototype.hasOwnProperty.call(dependencyToIdentifierMap, value)) {
             param = dependencyToIdentifierMap[value]
           } else {
-            var identifiers = unique(flatten(ids)).concat(Object.values(dependencyToIdentifierMap))
+            const identifiers = unique(flatten(ids)).concat(Object.values(dependencyToIdentifierMap))
             param = identifier(identifiers)
             dependencyToIdentifierMap[value] = param
           }
@@ -107,12 +107,12 @@ class Module extends AbstractSyntaxTree {
       if (node.type !== 'ImportExpression') {
         return node
       }
-      var resolve = { type: 'Identifier', name: 'resolve' }
-      var reject = { type: 'Identifier', name: 'reject' }
-      var defaultIdentifier = { type: 'Identifier', name: 'default' }
-      var value = { type: 'Identifier', name: 'value' }
-      var module = { type: 'Identifier', name: 'module' }
-      var enumerable = { type: 'Identifier', name: 'enumerable' }
+      const resolve = { type: 'Identifier', name: 'resolve' }
+      const reject = { type: 'Identifier', name: 'reject' }
+      const defaultIdentifier = { type: 'Identifier', name: 'default' }
+      const value = { type: 'Identifier', name: 'value' }
+      const module = { type: 'Identifier', name: 'module' }
+      const enumerable = { type: 'Identifier', name: 'enumerable' }
       return this.getNewExpression('Promise', [
         this.getFunctionExpression([resolve, reject], [
           this.getCallExpression('require', [
@@ -145,7 +145,7 @@ class Module extends AbstractSyntaxTree {
   }
 
   convertExportNamedDeclarations () {
-    var declarations = this.find('ExportNamedDeclaration')
+    const declarations = this.find('ExportNamedDeclaration')
     this.convertExportNamedDeclarationToDeclaration()
     this.remove({ type: 'ExportNamedDeclaration' })
     this.append(new ReturnStatement({
@@ -351,11 +351,11 @@ class Module extends AbstractSyntaxTree {
 
   wrapWithDefineWithArrayExpression (pairs) {
     pairs = unique(pairs, item => item.element + item.param)
-    var elements = pairs.map(pair => pair.element)
+    const elements = pairs.map(pair => pair.element)
       .map(function (element) {
         return { type: 'Literal', value: element }
       })
-    var params = pairs.filter(pair => pair.param).map(pair => pair.param)
+    const params = pairs.filter(pair => pair.param).map(pair => pair.param)
       .map(function (param) {
         return { type: 'Identifier', name: param }
       })
