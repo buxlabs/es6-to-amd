@@ -1,3 +1,8 @@
+## 1.2.1
+
+- update: all dependencies
+- remove: underscore
+
 ## 1.0.1
 
 - update: all dependencies
