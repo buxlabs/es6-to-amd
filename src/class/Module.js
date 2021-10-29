@@ -1,8 +1,7 @@
 'use strict'
 
-const { unique } = require('underscore')
 const AbstractSyntaxTree = require('abstract-syntax-tree')
-const { identifier } = require('pure-utilities/array')
+const { identifier, unique } = require('pure-utilities/array')
 const { flatten } = require('pure-utilities/collection')
 
 const {
