@@ -25,12 +25,12 @@
   },
   "homepage": "https://github.com/buxlabs/es6-to-amd#readme",
   "devDependencies": {
-    "ava": "^3.15.0",
+    "ava": "^4.3.0",
     "nyc": "^15.1.0",
-    "standard": "^16.0.4"
+    "standard": "^17.0.0"
   },
   "dependencies": {
-    "abstract-syntax-tree": "^2.20.4",
+    "abstract-syntax-tree": "^2.20.6",
     "pure-utilities": "^1.2.4"
   },
   "standard": {
